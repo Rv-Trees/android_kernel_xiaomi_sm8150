@@ -1766,38 +1766,33 @@ int goodix_ts_suspend(struct goodix_ts_core *core_data)
 
 	/* inform external module */
 	mutex_lock(&goodix_modules.mutex);
-	if (!list_empty(&goodix_modules.head)) {
-		list_for_each_entry(ext_module, &goodix_modules.head, list) {
-			if (!ext_module->funcs->before_suspend)
-				continue;
+        if (!list_empty(&goodix_modules.head)) {
+            list_for_each_entry(ext_module, &goodix_modules.head, list) {
+                if (!ext_module->funcs->before_suspend)
+                    continue;
 
-			r = ext_module->funcs->before_suspend(core_data,
-							      ext_module);
-			if (r == EVT_CANCEL_SUSPEND) {
-				if (core_data->double_tap_enabled &&
-				    (core_data->udfps_enabled || core_data->single_tap_enabled)) {
-					atomic_set(&core_data->suspend_stat,
-						   TP_GESTURE_DBCLK_FOD);
-				} else if (core_data->double_tap_enabled) {
-					atomic_set(&core_data->suspend_stat,
-						   TP_GESTURE_DBCLK);
-				} else if (core_data->udfps_enabled || core_data->single_tap_enabled)) {
-					atomic_set(&core_data->suspend_stat,
-						   TP_GESTURE_FOD);
-				}
-				ts_info("suspend_stat[%d]",
-					atomic_read(&core_data->suspend_stat));
-				ts_info("Canceled by module:%s",
-					ext_module->name);
-				if (!atomic_read(&core_data->suspend_stat)) {
-					ts_info("go suspend remaind work\n");
-				} else {
-					mutex_unlock(&goodix_modules.mutex);
-					goto out;
-				}
-			}
-		}
-	}
+                r = ext_module->funcs->before_suspend(core_data, ext_module);
+                if (r == EVT_CANCEL_SUSPEND) {
+                    if (core_data->double_tap_enabled &&
+                        (core_data->udfps_enabled || core_data->single_tap_enabled)) {
+                        atomic_set(&core_data->suspend_stat, TP_GESTURE_DBCLK_FOD);
+                    } else if (core_data->double_tap_enabled) {
+                        atomic_set(&core_data->suspend_stat, TP_GESTURE_DBCLK);
+                    } else if (core_data->udfps_enabled || core_data->single_tap_enabled) {
+                        atomic_set(&core_data->suspend_stat, TP_GESTURE_FOD);
+                    }
+
+                    ts_info("suspend_stat[%d]", atomic_read(&core_data->suspend_stat));
+                    ts_info("Canceled by module:%s", ext_module->name);
+                    if (!atomic_read(&core_data->suspend_stat)) {
+                        ts_info("go suspend remaind work\n");
+                    } else {
+                        mutex_unlock(&goodix_modules.mutex);
+                        goto out;
+                    }
+                }
+            }
+        }
 	mutex_unlock(&goodix_modules.mutex);
 
 	/* disable irq */
